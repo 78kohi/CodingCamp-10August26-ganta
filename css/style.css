@@ -1,0 +1,394 @@
+/* =============================================================
+   DESIGN TOKENS
+   ============================================================= */
+:root {
+  /* Palette */
+  --color-bg:           #0f172a;
+  --color-surface:      #1e293b;
+  --color-surface-2:    #334155;
+  --color-border:       #475569;
+  --color-text:         #f1f5f9;
+  --color-text-muted:   #94a3b8;
+  --color-accent:       #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-danger:       #f87171;
+  --color-success:      #34d399;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Typography */
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-body: system-ui, -apple-system, sans-serif;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+}
+
+/* =============================================================
+   BASE / BODY
+   ============================================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* =============================================================
+   HEADER  (Clock & Greeting — ganta's section)
+   ============================================================= */
+.dashboard-header {
+  text-align: center;
+  padding: var(--space-8) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.clock {
+  font-family: var(--font-mono);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.date-display {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
+
+.greeting {
+  font-size: 1.125rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+/* =============================================================
+   DASHBOARD GRID
+   ============================================================= */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+
+/* =============================================================
+   CARD
+   ============================================================= */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+.card-icon {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* =============================================================
+   SHARED INPUT STYLES  (.todo-input used by to-do, timer, links)
+   ============================================================= */
+.todo-input {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.todo-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.todo-input:focus {
+  border-color: var(--color-accent);
+}
+
+/* =============================================================
+   BUTTONS — base
+   ============================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast),
+              color var(--transition-fast), filter var(--transition-fast);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Primary */
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+/* Secondary */
+.btn-secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+/* Small modifier — used by "Clear completed" etc. */
+.btn-sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.8125rem;
+}
+
+/* =============================================================
+   TO-DO LIST  (ganta's section — structural helpers only)
+   ============================================================= */
+.todo-input-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.todo-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.todo-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}
+
+.task-counter {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/* =============================================================
+   FOCUS TIMER
+   ============================================================= */
+.timer-display {
+  font-family: var(--font-mono);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.05em;
+  color: var(--color-text);
+  line-height: 1;
+  margin: var(--space-4) 0;
+}
+
+.timer-progress-bar {
+  height: 6px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.timer-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--color-accent);
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-fast);
+}
+
+.timer-label {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
+
+.timer-controls {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.timer-presets {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.preset-btn {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preset-btn.active {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: rgba(99, 102, 241, 0.15);
+}
+
+/* =============================================================
+   QUICK LINKS
+   ============================================================= */
+.links-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.link-card {
+  position: relative;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.link-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.link-card__anchor {
+  display: block;
+  padding: var(--space-4) var(--space-3);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link-card__delete-btn {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.link-card:hover .link-card__delete-btn,
+.link-card__delete-btn:focus {
+  opacity: 1;
+}
+
+.link-card__delete-btn:hover {
+  color: var(--color-danger);
+}
+
+/* =============================================================
+   TOAST
+   ============================================================= */
+.toast {
+  position: fixed;
+  bottom: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-6);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base), transform var(--transition-base);
+  z-index: 100;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
