@@ -36,6 +36,34 @@
   --transition-base: 250ms ease;
 }
 
+/* Light theme overrides */
+[data-theme="light"] {
+  --color-bg:           #f8fafc;
+  --color-surface:      #ffffff;
+  --color-surface-2:    #f1f5f9;
+  --color-border:       #cbd5e1;
+  --color-text:         #0f172a;
+  --color-text-muted:   #64748b;
+  --color-accent:       #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-danger:       #ef4444;
+  --color-success:      #10b981;
+}
+
+/* Respect OS preference when no data-theme is set */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-bg:           #f8fafc;
+    --color-surface:      #ffffff;
+    --color-surface-2:    #f1f5f9;
+    --color-border:       #cbd5e1;
+    --color-text:         #0f172a;
+    --color-text-muted:   #64748b;
+    --color-danger:       #ef4444;
+    --color-success:      #10b981;
+  }
+}
+
 /* =============================================================
    BASE / BODY
    ============================================================= */
@@ -62,11 +90,18 @@ body {
   text-align: center;
   padding: var(--space-8) var(--space-6);
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+}
+
+.time-n-menu {
+  display: flex;
+  gap: 1.25rem;
 }
 
 .clock {
   font-family: var(--font-mono);
-  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-size: clamp(1rem, 2.5vw, 2rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--color-text);
@@ -74,14 +109,14 @@ body {
 }
 
 .date-display {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
   margin-top: var(--space-2);
 }
 
 .greeting {
-  font-size: 1.125rem;
-  color: var(--color-text-muted);
+  font-size: 2.5rem;
+  color: var(--color-text);
   margin-top: var(--space-1);
 }
 
@@ -370,6 +405,10 @@ body {
 /* =============================================================
    TOAST
    ============================================================= */
+[data-theme="light"] .toast {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
 .toast {
   position: fixed;
   bottom: var(--space-6);

@@ -1,18 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Life Dashboard</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
 </head>
 <body>
 
-  <!-- ───────────── HEADER: Clock & Greeting ───────────── -->
+  <!-- ───────────── HEADER: Clock, Greeting, Menu ───────────── -->
   <header class="dashboard-header">
-    <div id="clock" class="clock">00:00:00</div>
-    <div id="date-display" class="date-display"></div>
     <div id="greeting" class="greeting">Good morning!</div>
+    <div class="time-n-menu">
+      <div>
+        <div id="date-display" class="date-display"></div>
+        <div id="clock" class="clock">00:00:00</div>
+      </div>
+      <i class="fa-solid fa-bars"></i>
+      <button id="theme-toggle-btn" class="" aria-label="Toggle theme">🌙</button>
+    </div>
   </header>
 
   <!-- ───────────── MAIN GRID ───────────── -->
