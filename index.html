@@ -11,14 +11,27 @@
 
   <!-- ───────────── HEADER: Clock, Greeting, Menu ───────────── -->
   <header class="dashboard-header">
-    <div id="greeting" class="greeting">Good morning!</div>
-    <div class="time-n-menu">
-      <div>
-        <div id="date-display" class="date-display"></div>
+    <div>
+      <div id="greeting" class="greeting">Good morning!</div>
+      <span class="time-date">
         <div id="clock" class="clock">00:00:00</div>
-      </div>
+        <div id="date-display" class="date-display"></div>
+      </span>
+    </div>
+    <button class="menu-btn" aria-label="Open menu">
       <i class="fa-solid fa-bars"></i>
-      <button id="theme-toggle-btn" class="" aria-label="Toggle theme">🌙</button>
+    </button>
+    <div class="menu-dropdown hide">
+      <ul>
+        <li id="theme-toggle-btn" class="menu-item no-select" aria-label="Toggle theme">
+          <i class="fa-solid fa-moon"></i>
+          <span>Dark mode</span>
+        </li>
+        <li id="name-form" class="menu-item no-select" aria-label="Add/change name">
+          <i class="fa-solid fa-user"></i>
+          <span>Add name</span> 
+        </li>
+      </ul>
     </div>
   </header>
 
@@ -28,26 +41,31 @@
     <!-- TO-DO LIST CARD -->
     <section class="card" id="todo-card" aria-label="To-Do List">
       <h2 class="card-title">
-        <span class="card-icon">✅</span> To-Do List
+        <span class="card-icon">
+          <i class="fa-solid fa-square-check"></i>
+        </span> To-Do List
         <span class="task-counter" id="task-counter">0 / 0</span>
       </h2>
 
-      <div class="todo-input-row">
+      <form class="todo-input-row">
         <input
           type="text"
           id="todo-input"
           class="todo-input"
           placeholder="Add a new task…"
           maxlength="100"
+          autocomplete="off"
           aria-label="New task"
         />
         <button id="todo-add-btn" class="btn btn-primary" aria-label="Add task">Add</button>
-      </div>
+      </form>
 
-      <ul id="todo-list" class="todo-list" aria-live="polite"></ul>
+      <ul id="todo-list" class="todo-list" aria-live="polite">
+        
+      </ul>
 
       <div class="todo-footer">
-        <button id="clear-completed-btn" class="btn btn-ghost btn-sm">Clear completed</button>
+        <button id="clear-completed-btn" class="hide btn btn-ghost btn-sm">Clear completed</button>
       </div>
     </section>
 
@@ -112,6 +130,22 @@
 
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- NAME MODAL -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="name-modal-title">
+    <div class="modal-content">
+      <h3 id="name-modal-title">Change Name</h3>
+      <input
+        type="text"
+        id="name-input"
+        class="todo-input"
+        placeholder="Enter your name"
+        maxlength="50"
+        aria-label="Your name"
+      />
+      <button id="name-save-btn" class="btn btn-primary" aria-label="Save name">Save</button>
+    </div>
+  </div>
 
   <script src="js/script.js"></script>
 </body>

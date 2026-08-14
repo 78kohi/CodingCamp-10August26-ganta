@@ -83,8 +83,19 @@ body {
   line-height: 1.5;
 }
 
+li {
+  list-style: none;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
 /* =============================================================
-   HEADER  (Clock & Greeting — ganta's section)
+   HEADER  (Clock, Greeting, Menu — ganta's section)
    ============================================================= */
 .dashboard-header {
   text-align: center;
@@ -92,16 +103,22 @@ body {
   border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
-.time-n-menu {
+.hide {
+  display: none !important;
+}
+
+.time-date {
   display: flex;
-  gap: 1.25rem;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .clock {
   font-family: var(--font-mono);
-  font-size: clamp(1rem, 2.5vw, 2rem);
+  font-size: clamp(0.5rem, 1.25vw, 1.5rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--color-text);
@@ -111,13 +128,41 @@ body {
 .date-display {
   font-size: 0.875rem;
   color: var(--color-text-muted);
-  margin-top: var(--space-2);
 }
 
 .greeting {
   font-size: 2.5rem;
   color: var(--color-text);
   margin-top: var(--space-1);
+}
+
+.menu-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.menu-item {
+  display: block;
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-2);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  cursor: pointer;
+}
+
+.menu-dropdown {
+  position: absolute;
+  right: 1.25rem;
+  top: 12%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  /* padding: var(--space-2) var(--space-4); */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* =============================================================
@@ -255,6 +300,42 @@ body {
   gap: var(--space-2);
 }
 
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-8);
+  align-items: center;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.todo-item p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.todo-item-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.todo-item-actions i {
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+.todo-item-actions .fa-pen:hover {
+  color: var(--color-accent);
+}
+.todo-item-actions .fa-trash:hover {
+  color: var(--color-danger);
+}
+
 .todo-footer {
   display: flex;
   justify-content: flex-end;
@@ -266,6 +347,12 @@ body {
   font-size: 0.75rem;
   font-weight: 400;
   color: var(--color-text-muted);
+}
+
+.empty-message {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 /* =============================================================
@@ -431,3 +518,21 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* =============================================================
+   MODAL
+   ============================================================= */
+   .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    transition: opacity var(--transition-base);
+    z-index: 9999;
+  }
+
+  .modal.visible {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
