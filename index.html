@@ -76,7 +76,7 @@
       </h2>
 
       <div class="timer-display" id="timer-display" role="timer" aria-live="polite">
-        25:00
+        
       </div>
 
       <div class="timer-progress-bar">
@@ -95,6 +95,16 @@
         <button class="preset-btn active" data-minutes="25">25 min</button>
         <button class="preset-btn" data-minutes="10">10 min</button>
         <button class="preset-btn" data-minutes="5">5 min</button>
+        <button id="custom-preset-btn" class="preset-btn" data-minutes="">Custom</button>
+        <input
+          type="text"
+          class="timer-input hide" 
+          id="timer-input"
+          placeholder="Custom duration…"
+          maxlength="3"
+          autocomplete="off"
+          aria-label="Custom duration"
+        >
       </div>
     </section>
 
@@ -104,13 +114,14 @@
         <span class="card-icon">🔗</span> Quick Links
       </h2>
 
-      <div class="links-input-area">
+      <form class="links-input-area">
         <input
           type="text"
           id="link-name-input"
           class="todo-input"
           placeholder="Label (e.g. Gmail)"
           maxlength="30"
+          autocomplete="off"
           aria-label="Link label"
         />
         <input
@@ -118,12 +129,15 @@
           id="link-url-input"
           class="todo-input"
           placeholder="https://…"
+          autocomplete="off"
           aria-label="Link URL"
         />
         <button id="link-add-btn" class="btn btn-primary" aria-label="Add link">Add</button>
-      </div>
+      </form>
 
-      <div id="links-grid" class="links-grid" aria-live="polite"></div>
+      <div id="links-grid" class="links-grid" aria-live="polite">
+        
+      </div>
     </section>
 
   </main>
@@ -131,10 +145,13 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- NAME MODAL -->
-  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="name-modal-title">
-    <div class="modal-content">
-      <h3 id="name-modal-title">Change Name</h3>
+  <!-- MODAL -->
+  <dialog id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <button id="modal-close-btn" class="modal-close-btn" aria-label="Close modal">
+      <i class="fa-solid fa-x"></i>
+    </button>
+    <div id="modal-content" class="modal-content">
+      <h3 id="modal-title">Change Name</h3>
       <input
         type="text"
         id="name-input"
@@ -145,7 +162,7 @@
       />
       <button id="name-save-btn" class="btn btn-primary" aria-label="Save name">Save</button>
     </div>
-  </div>
+  </dialog>
 
   <script src="js/script.js"></script>
 </body>

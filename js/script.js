@@ -21,14 +21,14 @@
 
   // ─── Modal ─────────────────────────────────────────────────
   const Modal = (() => {
-    function show(title, message) {
+    function show(title, content) {
       const modal = document.getElementById("modal");
       const modalTitle = document.getElementById("modal-title");
-      const modalMessage = document.getElementById("modal-message");
+      const modalContent = document.getElementById("modal-content");
       const modalCloseBtn = document.getElementById("modal-close-btn");
 
       modalTitle.textContent = title;
-      modalMessage.textContent = message;
+      modalContent.innerHTML = content;
 
       modal.classList.remove("hide");
 
@@ -42,43 +42,227 @@
   })();
 
   // ─── TimerModule ───────────────────────────────────────────
-  const TimerModule = (() => {
-    // pure helpers
-    function formatTime(seconds) {}
-    function calcProgress() {}
+const TimerModule = (() => {
+  // State
+  let duration = 5 * 60;
+  let remaining = duration;
+  let interval = null;
+  let running = false;
 
-    // render helpers
-    function renderDisplay() {}
-    function renderButtons() {}
-    function renderPresets() {}
+  // ─── Pure helpers ────────────────────────────────────────
 
-    // internal
-    function tick() {}
-    function persistState() {}
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
 
-    // public API
-    function init() {}
-    function start() {}
-    function stop() {}
-    function reset() {}
-    function selectPreset(minutes) {}
+    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
 
-    return { init, start, stop, reset, selectPreset };
-  })();
+  function calcProgress() {
+    return ((duration - remaining) / duration) * 100;
+  }
+
+  // ─── Render helpers ──────────────────────────────────────
+
+  function renderDisplay() {
+    const display = document.querySelector("#timer-display");
+
+    if (!display) return;
+
+    display.textContent = formatTime(remaining);
+  }
+
+  function renderButtons() {
+    const startBtn = document.querySelector("#timer-start-btn");
+    const stopBtn = document.querySelector("#timer-stop-btn");
+
+    if (!startBtn || !stopBtn) return;
+
+    if (running) {
+      startBtn.classList.add("hide");
+      stopBtn.classList.remove("hide");
+    } else {
+      startBtn.classList.remove("hide");
+      stopBtn.classList.add("hide");
+    }
+  }
+
+  function renderProgress() {
+    const bar = document.querySelector("#timer-progress-fill");
+
+    if (running) bar.style.width = `${(remaining / duration) * 100}%`;
+  }
+
+  function renderPresets() {
+    // Presets are optional for the MVP.
+  }
+
+  // ─── Internal ────────────────────────────────────────────
+
+  function tick() {
+    if (remaining > 0) {
+      remaining--;
+      renderProgress();
+      renderDisplay();
+    } else {
+      stop();
+
+      // Timer finished
+      Modal.show("Focus complete!", "<p>Nice work. Take a short break.</p>");
+    }
+
+    persistState();
+  }
+
+  function persistState() {
+    Storage.save("timer", JSON.stringify({
+      duration,
+      remaining,
+      running
+    }));
+  }
+
+  // ─── Public API ─────────────────────────────────────────
+
+  function init() {
+    const saved = JSON.parse(Storage.load("timer") || "null");
+
+    if (saved) {
+      duration = saved.duration || 5 * 60;
+      remaining = saved.remaining ?? duration;
+    }
+
+    running = false;
+
+    renderDisplay();
+    renderButtons();
+  }
+
+  function start() {
+    if (running || remaining <= 0) return;
+
+    running = true;
+
+    interval = setInterval(tick, 1000);
+
+    renderButtons();
+    persistState();
+  }
+
+  function stop() {
+    running = false;
+
+    if (interval !== null) {
+      clearInterval(interval);
+      interval = null;
+    }
+
+    renderButtons();
+    persistState();
+  }
+
+  function reset() {
+    stop();
+
+    remaining = duration;
+
+    renderDisplay();
+    persistState();
+  }
+
+  function selectPreset(minutes) {
+    stop();
+
+    duration = minutes * 60;
+    remaining = duration;
+
+    renderDisplay();
+    persistState();
+  }
+
+  return { init, start, stop, reset, selectPreset };
+})();
 
   // ─── LinksModule ───────────────────────────────────────────
   const LinksModule = (() => {
     // internal helpers
-    function generateId() {}
-    function persist() {}
-    function showEmpty() {}
-    function createCard(link) {}
-    function renderGrid() {}
+    function generateId() {
+        return Date.now().toString(36);
+    }
 
-    // public API
-    function init() {}
-    function addLink(label, url) {}
-    function deleteLink(id) {}
+    function getLinks() {
+        return JSON.parse(Storage.load("links") || "[]");
+    }
+
+    function persist(links) {
+        Storage.save("links", JSON.stringify(links));
+    }
+
+    function createCard(link) {
+        const grid = document.querySelector("#links-grid");
+
+        const card = document.createElement("div");
+        card.classList.add("link-card");
+        card.dataset.id = link.id;
+
+        card.innerHTML = `
+          <a href="${link.url}" target="_blank" rel="noopener noreferrer">
+            <span class="link-label">${link.label}</span>
+          </a>
+
+          <button class="link-delete">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        `;
+
+        const deleteBtn = card.querySelector(".link-delete");
+
+        deleteBtn.addEventListener("click", () => {
+            deleteLink(link.id);
+        });
+
+        grid.appendChild(card);
+    }
+
+    function renderGrid() {
+        const grid = document.querySelector("#links-grid");
+
+        grid.innerHTML = "";
+
+        const links = getLinks();
+
+        links.forEach(link => {
+            createCard(link);
+        });
+    }
+
+    function addLink(label, url) {
+        const links = getLinks();
+
+        const link = {
+            id: generateId(),
+            label,
+            url
+        };
+
+        links.push(link);
+
+        persist(links);
+        renderGrid();
+    }
+
+    function deleteLink(id) {
+        let links = getLinks();
+
+        links = links.filter(link => link.id !== id);
+
+        persist(links);
+        renderGrid();
+    }
+
+    function init() {
+        renderGrid();
+    }
 
     return { init, addLink, deleteLink };
   })();
@@ -101,7 +285,9 @@
     }
     function showEmpty() {
       const todoList = document.getElementById("todo-list");
-      if (todoList.children.length === 0) {
+      const hasTasks = todoList.querySelector(".todo-item");
+
+      if (!hasTasks) {
         const emptyMessage = document.createElement("p");
         emptyMessage.textContent = "No tasks yet. Add a task to get started!";
         emptyMessage.classList.add("empty-message");
@@ -116,56 +302,56 @@
     function createItem(task) {
       const todoList = document.getElementById("todo-list");
 
-    const item = document.createElement("li");
-    item.classList.add("todo-item");
-    item.dataset.id = task.id;
+      const item = document.createElement("li");
+      item.classList.add("todo-item");
+      item.dataset.id = task.id;
 
-    item.innerHTML = `
-        <p class="todo-text">${task.text}</p>
-        <input class="todo-edit-input todo-input hide" type="text">
+      item.innerHTML = `
+          <p class="todo-text">${task.text}</p>
+          <input class="todo-edit-input todo-input hide" type="text">
 
-        <div class="todo-item-actions">
-            <i class="todo-edit fa-solid fa-pen"></i>
-            <i class="todo-delete fa-solid fa-trash"></i>
-            <input class="todo-check" type="checkbox" ${task.completed ? "checked" : ""}>
-        </div>
-    `;
+          <div class="todo-item-actions">
+              <i class="todo-edit fa-solid fa-pen"></i>
+              <i class="todo-delete fa-solid fa-trash"></i>
+              <input class="todo-check" type="checkbox" ${task.completed ? "checked" : ""}>
+          </div>
+      `;
 
-    const checkbox = item.querySelector(".todo-check");
-    const deleteBtn = item.querySelector(".todo-delete");
-    const editBtn = item.querySelector(".todo-edit");
+      const checkbox = item.querySelector(".todo-check");
+      const deleteBtn = item.querySelector(".todo-delete");
+      const editBtn = item.querySelector(".todo-edit");
 
-    checkbox.addEventListener("change", () => {
-        toggleTaskCompletion(task.id);
-    });
-
-    deleteBtn.addEventListener("click", () => {
-        deleteTask(task.id);
-    });
-
-    editBtn.addEventListener("click", () => {
-      const editInput = item.querySelector(".todo-edit-input");
-      const p = item.querySelector(".todo-text");
-
-      editInput.value = p.textContent;
-
-      p.classList.add("hide");
-      editInput.classList.remove("hide");
-
-      editInput.focus();
-
-      editInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          const editText = editInput.value.trim();
-  
-          if (!editText) return;
-  
-          editTask(task.id, editText);
-        }
+      checkbox.addEventListener("change", () => {
+          toggleTaskCompletion(task.id);
       });
-    });
 
-    todoList.appendChild(item);
+      deleteBtn.addEventListener("click", () => {
+          deleteTask(task.id);
+      });
+
+      editBtn.addEventListener("click", () => {
+        const editInput = item.querySelector(".todo-edit-input");
+        const p = item.querySelector(".todo-text");
+
+        editInput.value = p.textContent;
+
+        p.classList.add("hide");
+        editInput.classList.remove("hide");
+
+        editInput.focus();
+
+        editInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            const editText = editInput.value.trim();
+    
+            if (!editText) return;
+    
+            editTask(task.id, editText);
+          }
+        });
+      });
+
+      todoList.appendChild(item);
     }
     function renderList() {
       const tasks = JSON.parse(Storage.load("tasks") || "[]");
@@ -303,9 +489,13 @@
     displayDate();
     updateClock();
     setInterval(updateClock, 1000);
+
     ToDoListModule.renderList();
     showClearTasks();
     tasksCounter();
+
+    LinksModule.init();
+    TimerModule.init();
   });
 
   // Toggle theme button
@@ -350,13 +540,59 @@
     }
   })
 
-  document.querySelector("#todo-add-btn").addEventListener("click", () => {
-    
-  })
-
   document.querySelector("#clear-completed-btn").addEventListener("click", () => {
     ToDoListModule.clearCompletedTasks();
   })
+
+  // Quick links
+  document.querySelector(".links-input-area").addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const labelInput = document.querySelector("#link-name-input");
+    const urlInput = document.querySelector("#link-url-input");
+
+    const label = labelInput.value.trim();
+    const url = urlInput.value.trim();
+
+    if (!label || !url) return;
+
+    LinksModule.addLink(label, url);
+
+    labelInput.value = "";
+    urlInput.value = "";
+  });
+
+  // Timer
+  document.querySelector("#timer-start-btn").addEventListener("click", () => {
+    TimerModule.start();
+  });
+
+  document.querySelector("#timer-stop-btn").addEventListener("click", () => {
+    TimerModule.stop();
+  });
+
+  document.querySelector("#timer-reset-btn").addEventListener("click", () => {
+    TimerModule.reset();
+  });
+
+  document.querySelector("#custom-preset-btn").addEventListener("click", () => {
+    const customInput = document.querySelector("#timer-input");
+    customInput.classList.remove("hide");
+    customInput.focus();
+  });
+
+  document.querySelector("#timer-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const customInput = document.querySelector("#timer-input");
+      const minutes = parseInt(customInput.value.trim(), 10);
+
+      if (!isNaN(minutes) && minutes > 0) {
+        TimerModule.selectPreset(minutes);
+        customInput.value = "";
+        customInput.classList.add("hide");
+      }
+    }
+  });
 
   document.addEventListener("click" , (e) => {
     if (!document.querySelector(".menu-dropdown").contains(e.target) && !document.querySelector(".menu-btn").contains(e.target)) {
