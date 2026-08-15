@@ -44,6 +44,17 @@
         <span class="card-icon">
           <i class="fa-solid fa-square-check"></i>
         </span> To-Do List
+        <div class="task-actions">
+        <button
+          id="sort-tasks-btn"
+          class="btn btn-ghost btn-sm"
+          type="button"
+          aria-label="Sort tasks"
+        >
+        <i class="fa-solid fa-arrow-down-wide-short"></i>
+          Sort
+        </button>
+      </div>
         <span class="task-counter" id="task-counter">0 / 0</span>
       </h2>
 
@@ -147,20 +158,12 @@
 
   <!-- MODAL -->
   <dialog id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <button id="modal-close-btn" class="modal-close-btn" aria-label="Close modal">
-      <i class="fa-solid fa-x"></i>
-    </button>
     <div id="modal-content" class="modal-content">
-      <h3 id="modal-title">Change Name</h3>
-      <input
-        type="text"
-        id="name-input"
-        class="todo-input"
-        placeholder="Enter your name"
-        maxlength="50"
-        aria-label="Your name"
-      />
-      <button id="name-save-btn" class="btn btn-primary" aria-label="Save name">Save</button>
+      <h3 id="modal-title"></h3>
+      <button id="modal-close-btn" class="modal-close-btn" aria-label="Close modal">
+        <i class="fa-solid fa-x"></i>
+      </button>
+      <div id="modal-body" class="modal-body"></div>
     </div>
   </dialog>
 

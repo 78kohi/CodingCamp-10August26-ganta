@@ -1,603 +1,1585 @@
 (function () {
+  "use strict";
 
-  // ─── Storage ───────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // Storage
+  // ─────────────────────────────────────────────────────────────
+
   const Storage = (() => {
     function save(key, value) {
-      localStorage.setItem(key, value)
+      localStorage.setItem(key, value);
     }
+
     function load(key) {
-      return localStorage.getItem(key)
+      return localStorage.getItem(key);
     }
-    return { save, load };
+
+    function remove(key) {
+      localStorage.removeItem(key);
+    }
+
+    function loadJSON(key, fallback = null) {
+      try {
+        const value = load(key);
+        return value === null ? fallback : JSON.parse(value);
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveJSON(key, value) {
+      save(key, JSON.stringify(value));
+    }
+
+    return {
+      save,
+      load,
+      remove,
+      loadJSON,
+      saveJSON
+    };
   })();
 
-  // ─── Toast ─────────────────────────────────────────────────
-  const Toast = (() => {
-    function show(message, duration = 3000) {
 
+  // ─────────────────────────────────────────────────────────────
+  // Toast
+  // ─────────────────────────────────────────────────────────────
+
+  const Toast = (() => {
+    let timeout = null;
+
+    function show(message, duration = 3000) {
+      const toast = document.querySelector("#toast");
+
+      if (!toast) return;
+
+      toast.textContent = message;
+      toast.classList.remove("hide");
+
+      // Restart animation if necessary
+      toast.classList.remove("visible");
+
+      requestAnimationFrame(() => {
+        toast.classList.add("visible");
+      });
+
+      clearTimeout(timeout);
+
+      timeout = setTimeout(() => {
+        toast.classList.remove("visible");
+
+        setTimeout(() => {
+          toast.classList.add("hide");
+        }, 200);
+      }, duration);
     }
+
     return { show };
   })();
 
-  // ─── Modal ─────────────────────────────────────────────────
+
+  // ─────────────────────────────────────────────────────────────
+  // Modal
+  // ─────────────────────────────────────────────────────────────
+
   const Modal = (() => {
+    const modal = document.querySelector("#modal");
+
     function show(title, content) {
-      const modal = document.getElementById("modal");
-      const modalTitle = document.getElementById("modal-title");
-      const modalContent = document.getElementById("modal-content");
-      const modalCloseBtn = document.getElementById("modal-close-btn");
+      const modalTitle =
+        document.querySelector("#modal-title");
+
+      const modalBody =
+        document.querySelector("#modal-body");
 
       modalTitle.textContent = title;
-      modalContent.innerHTML = content;
+      modalBody.innerHTML = content;
 
-      modal.classList.remove("hide");
-
-      modalCloseBtn.addEventListener("click", () => {
-        modal.classList.toggle("visible");
-      });
+      if (!modal.open) {
+        modal.showModal();
+      }
     }
-    function hide() {}
+
+    function hide() {
+      if (modal.open) {
+        modal.close();
+      }
+    }
 
     return { show, hide };
   })();
 
-  // ─── TimerModule ───────────────────────────────────────────
-const TimerModule = (() => {
-  // State
-  let duration = 5 * 60;
-  let remaining = duration;
-  let interval = null;
-  let running = false;
 
-  // ─── Pure helpers ────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // Menu
+  // ─────────────────────────────────────────────────────────────
 
-  function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+  const Menu = (() => {
+    const menu = document.querySelector(".menu-dropdown");
 
-    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  }
+    function toggle() {
+      menu.classList.toggle("hide");
+    }
 
-  function calcProgress() {
-    return ((duration - remaining) / duration) * 100;
-  }
+    function hide() {
+      menu.classList.add("hide");
+    }
 
-  // ─── Render helpers ──────────────────────────────────────
+    function show() {
+      menu.classList.remove("hide");
+    }
 
-  function renderDisplay() {
-    const display = document.querySelector("#timer-display");
+    return {
+      toggle,
+      hide,
+      show
+    };
+  })();
 
-    if (!display) return;
 
-    display.textContent = formatTime(remaining);
-  }
+  // ─────────────────────────────────────────────────────────────
+  // Theme
+  // ─────────────────────────────────────────────────────────────
 
-  function renderButtons() {
-    const startBtn = document.querySelector("#timer-start-btn");
-    const stopBtn = document.querySelector("#timer-stop-btn");
+  function updateThemeUI(theme) {
+    const themeBtn = document.querySelector("#theme-toggle-btn");
 
-    if (!startBtn || !stopBtn) return;
+    if (!themeBtn) return;
 
-    if (running) {
-      startBtn.classList.add("hide");
-      stopBtn.classList.remove("hide");
+    const icon = themeBtn.querySelector("i");
+    const text = themeBtn.querySelector("span");
+
+    if (theme === "dark") {
+      icon.classList.remove("fa-moon");
+      icon.classList.add("fa-sun");
+      text.textContent = "Light mode";
     } else {
-      startBtn.classList.remove("hide");
-      stopBtn.classList.add("hide");
+      icon.classList.remove("fa-sun");
+      icon.classList.add("fa-moon");
+      text.textContent = "Dark mode";
     }
   }
 
-  function renderProgress() {
-    const bar = document.querySelector("#timer-progress-fill");
+  function initTheme() {
+    const savedTheme = Storage.load("theme") || "light";
 
-    if (running) bar.style.width = `${(remaining / duration) * 100}%`;
+    document.documentElement.setAttribute(
+      "data-theme",
+      savedTheme
+    );
+
+    updateThemeUI(savedTheme);
   }
 
-  function renderPresets() {
-    // Presets are optional for the MVP.
+  function toggleTheme() {
+    const currentTheme =
+      document.documentElement.getAttribute("data-theme") || "light";
+
+    const newTheme =
+      currentTheme === "dark" ? "light" : "dark";
+
+    document.documentElement.setAttribute(
+      "data-theme",
+      newTheme
+    );
+
+    Storage.save("theme", newTheme);
+    updateThemeUI(newTheme);
+
+    Menu.hide();
+
+    Toast.show(
+      newTheme === "dark"
+        ? "Dark mode enabled"
+        : "Light mode enabled"
+    );
   }
 
-  // ─── Internal ────────────────────────────────────────────
 
-  function tick() {
-    if (remaining > 0) {
-      remaining--;
-      renderProgress();
-      renderDisplay();
+  // ─────────────────────────────────────────────────────────────
+  // Greeting
+  // ─────────────────────────────────────────────────────────────
+
+  function getGreeting() {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) {
+      return "morning ☀️";
+    }
+
+    if (hour >= 12 && hour < 17) {
+      return "afternoon 👋";
+    }
+
+    return "evening 🌙";
+  }
+
+  function greet() {
+    const greeting = document.querySelector("#greeting");
+
+    if (!greeting) return;
+
+    const name = Storage.load("name");
+    const time = getGreeting();
+
+    if (name) {
+      greeting.textContent = `Good ${time}, ${name}`;
     } else {
+      greeting.textContent = `Good ${time}!`;
+    }
+  }
+
+
+  // ─────────────────────────────────────────────────────────────
+  // Clock & Date
+  // ─────────────────────────────────────────────────────────────
+
+  function updateClock() {
+    const clock = document.querySelector("#clock");
+
+    if (!clock) return;
+
+    const now = new Date();
+
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+
+    clock.textContent =
+      `${hours}:${minutes}:${seconds}`;
+  }
+
+  function displayDate() {
+    const dateText =
+      document.querySelector("#date-display");
+
+    if (!dateText) return;
+
+    const now = new Date();
+
+    dateText.textContent =
+      now.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+  }
+
+
+  // ─────────────────────────────────────────────────────────────
+  // Name Modal
+  // ─────────────────────────────────────────────────────────────
+
+  function openNameModal() {
+    const currentName = Storage.load("name") || "";
+
+    Modal.show(
+      "Change Name",
+      `
+        <input
+          type="text"
+          id="name-input"
+          class="todo-input"
+          placeholder="Enter your name"
+          maxlength="50"
+          autocomplete="off"
+          aria-label="Your name"
+          value="${escapeHTML(currentName)}"
+        />
+
+        <button
+          id="name-save-btn"
+          class="btn btn-primary"
+          aria-label="Save name"
+        >
+          Save
+        </button>
+      `
+    );
+
+    const input = document.querySelector("#name-input");
+    const saveBtn = document.querySelector("#name-save-btn");
+
+    input.focus();
+
+    saveBtn.addEventListener("click", () => {
+      saveName();
+    });
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        saveName();
+      }
+
+      if (event.key === "Escape") {
+        Modal.hide();
+      }
+    });
+  }
+
+  function saveName() {
+    const input = document.querySelector("#name-input");
+
+    if (!input) return;
+
+    const name = input.value.trim();
+
+    if (!name) {
+      Toast.show("Please enter a name.");
+      input.focus();
+      return;
+    }
+
+    Storage.save("name", name);
+
+    greet();
+    Modal.hide();
+
+    Toast.show(`Welcome, ${name}!`);
+  }
+
+
+  // ─────────────────────────────────────────────────────────────
+  // Utility
+  // ─────────────────────────────────────────────────────────────
+
+  function escapeHTML(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+
+
+  // ─────────────────────────────────────────────────────────────
+  // Timer
+  // ─────────────────────────────────────────────────────────────
+
+  const TimerModule = (() => {
+    let duration = 25 * 60;
+    let remaining = duration;
+    let interval = null;
+    let running = false;
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+
+      return (
+        `${String(minutes).padStart(2, "0")}:` +
+        `${String(secs).padStart(2, "0")}`
+      );
+    }
+
+    function renderDisplay() {
+      const display =
+        document.querySelector("#timer-display");
+
+      if (!display) return;
+
+      display.textContent = formatTime(remaining);
+    }
+
+    function renderButtons() {
+      const startBtn =
+        document.querySelector("#timer-start-btn");
+
+      const stopBtn =
+        document.querySelector("#timer-stop-btn");
+
+      if (!startBtn || !stopBtn) return;
+
+      if (running) {
+        startBtn.classList.add("hide");
+        stopBtn.classList.remove("hide");
+
+        stopBtn.disabled = false;
+      } else {
+        startBtn.classList.remove("hide");
+        stopBtn.classList.add("hide");
+
+        stopBtn.disabled = true;
+      }
+    }
+
+    function renderProgress() {
+      const bar =
+        document.querySelector("#timer-progress-fill");
+
+      if (!bar || duration <= 0) return;
+
+      const progress =
+        ((duration - remaining) / duration) * 100;
+
+      bar.style.width =
+        `${Math.min(100, Math.max(0, progress))}%`;
+    }
+
+    function renderLabel() {
+      const label =
+        document.querySelector("#timer-label");
+
+      if (!label) return;
+
+      const minutes = duration / 60;
+
+      label.textContent =
+        `Focus Timer · ${minutes} min`;
+    }
+
+    function renderPresets() {
+      const buttons =
+        document.querySelectorAll(".preset-btn");
+
+      buttons.forEach(button => {
+        const minutes =
+          Number(button.dataset.minutes);
+
+        if (
+          minutes &&
+          minutes === duration / 60
+        ) {
+          button.classList.add("active");
+        } else {
+          button.classList.remove("active");
+        }
+      });
+    }
+
+    function render() {
+      renderDisplay();
+      renderButtons();
+      renderProgress();
+      renderLabel();
+      renderPresets();
+    }
+
+    function persistState() {
+      Storage.saveJSON("timer", {
+        duration,
+        remaining
+      });
+    }
+
+    function tick() {
+      if (remaining <= 0) {
+        finish();
+        return;
+      }
+
+      remaining--;
+
+      renderDisplay();
+      renderProgress();
+
+      persistState();
+
+      if (remaining <= 0) {
+        finish();
+      }
+    }
+
+    function finish() {
       stop();
 
-      // Timer finished
-      Modal.show("Focus complete!", "<p>Nice work. Take a short break.</p>");
-    }
+      remaining = 0;
 
-    persistState();
-  }
+      render();
 
-  function persistState() {
-    Storage.save("timer", JSON.stringify({
-      duration,
-      remaining,
-      running
-    }));
-  }
+      Modal.show(
+        "Focus complete!",
+        `
+          <p>Nice work. Take a short break.</p>
 
-  // ─── Public API ─────────────────────────────────────────
-
-  function init() {
-    const saved = JSON.parse(Storage.load("timer") || "null");
-
-    if (saved) {
-      duration = saved.duration || 5 * 60;
-      remaining = saved.remaining ?? duration;
-    }
-
-    running = false;
-
-    renderDisplay();
-    renderButtons();
-  }
-
-  function start() {
-    if (running || remaining <= 0) return;
-
-    running = true;
-
-    interval = setInterval(tick, 1000);
-
-    renderButtons();
-    persistState();
-  }
-
-  function stop() {
-    running = false;
-
-    if (interval !== null) {
-      clearInterval(interval);
-      interval = null;
-    }
-
-    renderButtons();
-    persistState();
-  }
-
-  function reset() {
-    stop();
-
-    remaining = duration;
-
-    renderDisplay();
-    persistState();
-  }
-
-  function selectPreset(minutes) {
-    stop();
-
-    duration = minutes * 60;
-    remaining = duration;
-
-    renderDisplay();
-    persistState();
-  }
-
-  return { init, start, stop, reset, selectPreset };
-})();
-
-  // ─── LinksModule ───────────────────────────────────────────
-  const LinksModule = (() => {
-    // internal helpers
-    function generateId() {
-        return Date.now().toString(36);
-    }
-
-    function getLinks() {
-        return JSON.parse(Storage.load("links") || "[]");
-    }
-
-    function persist(links) {
-        Storage.save("links", JSON.stringify(links));
-    }
-
-    function createCard(link) {
-        const grid = document.querySelector("#links-grid");
-
-        const card = document.createElement("div");
-        card.classList.add("link-card");
-        card.dataset.id = link.id;
-
-        card.innerHTML = `
-          <a href="${link.url}" target="_blank" rel="noopener noreferrer">
-            <span class="link-label">${link.label}</span>
-          </a>
-
-          <button class="link-delete">
-            <i class="fa-solid fa-trash"></i>
+          <button
+            id="timer-finished-close"
+            class="btn btn-primary"
+          >
+            Done
           </button>
-        `;
+        `
+      );
 
-        const deleteBtn = card.querySelector(".link-delete");
+      const closeBtn =
+        document.querySelector("#timer-finished-close");
 
-        deleteBtn.addEventListener("click", () => {
-            deleteLink(link.id);
-        });
+      if (closeBtn) {
+        closeBtn.addEventListener(
+          "click",
+          Modal.hide
+        );
+      }
 
-        grid.appendChild(card);
-    }
-
-    function renderGrid() {
-        const grid = document.querySelector("#links-grid");
-
-        grid.innerHTML = "";
-
-        const links = getLinks();
-
-        links.forEach(link => {
-            createCard(link);
-        });
-    }
-
-    function addLink(label, url) {
-        const links = getLinks();
-
-        const link = {
-            id: generateId(),
-            label,
-            url
-        };
-
-        links.push(link);
-
-        persist(links);
-        renderGrid();
-    }
-
-    function deleteLink(id) {
-        let links = getLinks();
-
-        links = links.filter(link => link.id !== id);
-
-        persist(links);
-        renderGrid();
+      Toast.show("Focus session complete!");
     }
 
     function init() {
-        renderGrid();
+      const saved =
+        Storage.loadJSON("timer");
+
+      if (saved) {
+        duration =
+          Number(saved.duration) > 0
+            ? Number(saved.duration)
+            : 25 * 60;
+
+        remaining =
+          Number(saved.remaining) >= 0
+            ? Number(saved.remaining)
+            : duration;
+      }
+
+      running = false;
+
+      render();
     }
 
-    return { init, addLink, deleteLink };
+    function start() {
+      if (running || remaining <= 0) {
+        return;
+      }
+
+      running = true;
+
+      interval =
+        setInterval(tick, 1000);
+
+      renderButtons();
+      persistState();
+
+      Toast.show("Focus timer started.");
+    }
+
+    function stop() {
+      running = false;
+
+      if (interval !== null) {
+        clearInterval(interval);
+        interval = null;
+      }
+
+      renderButtons();
+      persistState();
+    }
+
+    function reset() {
+      stop();
+
+      remaining = duration;
+
+      render();
+
+      persistState();
+
+      Toast.show("Timer reset.");
+    }
+
+    function selectPreset(minutes) {
+      if (!Number.isFinite(minutes) || minutes <= 0) {
+        return;
+      }
+
+      stop();
+
+      duration = minutes * 60;
+      remaining = duration;
+
+      render();
+
+      persistState();
+
+      Toast.show(`${minutes} minute timer selected.`);
+    }
+
+    return {
+      init,
+      start,
+      stop,
+      reset,
+      selectPreset
+    };
   })();
 
-  // ─── ToDoListModule ───────────────────────────────────────────
-  const ToDoListModule = (() => {
-    // internal helpers
-    function generateId() {
-      return Date.now().toString(36);
-    }
-    function persist() {
-      const tasks = Array.from(document.querySelectorAll("#todo-list .todo-item")).map(item => {
-        return {
-          id: item.dataset.id,
-          text: item.querySelector("p").textContent,
-          completed: item.querySelector("input[type='checkbox']").checked
-        };
-      });
-      Storage.save("tasks", JSON.stringify(tasks));
-    }
-    function showEmpty() {
-      const todoList = document.getElementById("todo-list");
-      const hasTasks = todoList.querySelector(".todo-item");
 
-      if (!hasTasks) {
-        const emptyMessage = document.createElement("p");
-        emptyMessage.textContent = "No tasks yet. Add a task to get started!";
-        emptyMessage.classList.add("empty-message");
-        todoList.appendChild(emptyMessage);
-      } else {
-        const emptyMessage = todoList.querySelector(".empty-message");
-        if (emptyMessage) {
-          emptyMessage.remove();
-        }
+  // ─────────────────────────────────────────────────────────────
+  // Quick Links
+  // ─────────────────────────────────────────────────────────────
+
+  const LinksModule = (() => {
+    function generateId() {
+      return (
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2)
+      );
+    }
+
+    function getLinks() {
+      return Storage.loadJSON("links", []);
+    }
+
+    function persist(links) {
+      Storage.saveJSON("links", links);
+    }
+
+    function normalizeURL(url) {
+      if (!/^https?:\/\//i.test(url)) {
+        return `https://${url}`;
+      }
+
+      return url;
+    }
+
+    function createCard(link) {
+      const grid =
+        document.querySelector("#links-grid");
+
+      const card =
+        document.createElement("div");
+
+      card.classList.add("link-card");
+      card.dataset.id = link.id;
+
+      const anchor =
+        document.createElement("a");
+
+      anchor.href = link.url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+
+      const label =
+        document.createElement("span");
+
+      label.classList.add("link-label");
+      label.textContent = link.label;
+
+      anchor.appendChild(label);
+
+      const deleteBtn =
+        document.createElement("button");
+
+      deleteBtn.classList.add("link-delete");
+      deleteBtn.type = "button";
+      deleteBtn.setAttribute(
+        "aria-label",
+        `Delete ${link.label}`
+      );
+
+      deleteBtn.innerHTML =
+        `<i class="fa-solid fa-trash"></i>`;
+
+      deleteBtn.addEventListener(
+        "click",
+        () => deleteLink(link.id)
+      );
+
+      card.appendChild(anchor);
+      card.appendChild(deleteBtn);
+
+      grid.appendChild(card);
+    }
+
+    function renderGrid() {
+      const grid =
+        document.querySelector("#links-grid");
+
+      if (!grid) return;
+
+      grid.innerHTML = "";
+
+      const links = getLinks();
+
+      if (links.length === 0) {
+        const empty =
+          document.createElement("p");
+
+        empty.classList.add("empty-message");
+        empty.textContent =
+          "No quick links yet.";
+
+        grid.appendChild(empty);
+        return;
+      }
+
+      links.forEach(createCard);
+    }
+
+    function addLink(label, url) {
+      const links = getLinks();
+
+      const normalizedURL =
+        normalizeURL(url);
+
+      try {
+        new URL(normalizedURL);
+      } catch {
+        Toast.show("Please enter a valid URL.");
+        return false;
+      }
+
+      const link = {
+        id: generateId(),
+        label,
+        url: normalizedURL
+      };
+
+      links.push(link);
+
+      persist(links);
+      renderGrid();
+
+      Toast.show("Link added.");
+
+      return true;
+    }
+
+    function deleteLink(id) {
+      const links =
+        getLinks().filter(
+          link => link.id !== id
+        );
+
+      persist(links);
+      renderGrid();
+
+      Toast.show("Link deleted.");
+    }
+
+    function init() {
+      renderGrid();
+    }
+
+    return {
+      init,
+      addLink,
+      deleteLink
+    };
+  })();
+
+
+  // ─────────────────────────────────────────────────────────────
+  // To-Do List
+  // ─────────────────────────────────────────────────────────────
+
+  const ToDoListModule = (() => {
+    function generateId() {
+      return (
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2)
+      );
+    }
+
+    function getTasks() {
+      return Storage.loadJSON("tasks", []);
+    }
+
+    function persist(tasks) {
+      Storage.saveJSON("tasks", tasks);
+    }
+
+    function isDuplicate(text) {
+      const tasks = getTasks();
+
+      return tasks.some(
+        task => task.text.trim().toLowerCase() === text.trim().toLowerCase()
+      );
+    }
+
+    let sortMode = "newest";
+
+    function sortTasks(tasks) {
+      const sorted = [...tasks];
+
+      switch (sortMode) {
+        case "newest":
+          return sorted.reverse();
+
+        case "oldest":
+          return sorted;
+
+        case "completed":
+          return sorted.sort(
+            (a, b) =>
+              Number(b.completed) - Number(a.completed)
+          );
+
+        case "incomplete":
+          return sorted.sort(
+            (a, b) =>
+              Number(a.completed) - Number(b.completed)
+          );
+
+        default:
+          return sorted;
       }
     }
-    function createItem(task) {
-      const todoList = document.getElementById("todo-list");
 
-      const item = document.createElement("li");
+    function showEmpty() {
+      const todoList =
+        document.querySelector("#todo-list");
+
+      if (!todoList) return;
+
+      const hasTasks =
+        todoList.querySelector(".todo-item");
+
+      const existing =
+        todoList.querySelector(".empty-message");
+
+      if (!hasTasks && !existing) {
+        const emptyMessage =
+          document.createElement("p");
+
+        emptyMessage.classList.add(
+          "empty-message"
+        );
+
+        emptyMessage.textContent =
+          "No tasks yet. Add a task to get started!";
+
+        todoList.appendChild(emptyMessage);
+      }
+
+      if (hasTasks && existing) {
+        existing.remove();
+      }
+    }
+
+    function createItem(task) {
+      const todoList =
+        document.querySelector("#todo-list");
+
+      const item =
+        document.createElement("li");
+
       item.classList.add("todo-item");
       item.dataset.id = task.id;
 
-      item.innerHTML = `
-          <p class="todo-text">${task.text}</p>
-          <input class="todo-edit-input todo-input hide" type="text">
+      const text =
+        document.createElement("p");
 
-          <div class="todo-item-actions">
-              <i class="todo-edit fa-solid fa-pen"></i>
-              <i class="todo-delete fa-solid fa-trash"></i>
-              <input class="todo-check" type="checkbox" ${task.completed ? "checked" : ""}>
-          </div>
-      `;
+      text.classList.add("todo-text");
+      text.textContent = task.text;
 
-      const checkbox = item.querySelector(".todo-check");
-      const deleteBtn = item.querySelector(".todo-delete");
-      const editBtn = item.querySelector(".todo-edit");
+      const editInput =
+        document.createElement("input");
 
-      checkbox.addEventListener("change", () => {
+      editInput.classList.add(
+        "todo-edit-input",
+        "todo-input",
+        "hide"
+      );
+
+      editInput.type = "text";
+      editInput.value = task.text;
+      editInput.maxLength = 100;
+
+      const actions =
+        document.createElement("div");
+
+      actions.classList.add(
+        "todo-item-actions"
+      );
+
+      const editBtn =
+        document.createElement("i");
+
+      editBtn.className =
+        "todo-edit fa-solid fa-pen";
+
+      editBtn.setAttribute(
+        "role",
+        "button"
+      );
+
+      editBtn.setAttribute(
+        "tabindex",
+        "0"
+      );
+
+      const deleteBtn =
+        document.createElement("i");
+
+      deleteBtn.className =
+        "todo-delete fa-solid fa-trash";
+
+      deleteBtn.setAttribute(
+        "role",
+        "button"
+      );
+
+      deleteBtn.setAttribute(
+        "tabindex",
+        "0"
+      );
+
+      const checkbox =
+        document.createElement("input");
+
+      checkbox.classList.add("todo-check");
+      checkbox.type = "checkbox";
+      checkbox.checked = Boolean(
+        task.completed
+      );
+
+      actions.append(
+        editBtn,
+        deleteBtn,
+        checkbox
+      );
+
+      item.append(
+        text,
+        editInput,
+        actions
+      );
+
+      // ── Complete ──
+
+      checkbox.addEventListener(
+        "change",
+        () => {
           toggleTaskCompletion(task.id);
-      });
+        }
+      );
 
-      deleteBtn.addEventListener("click", () => {
+      // ── Delete ──
+
+      deleteBtn.addEventListener(
+        "click",
+        () => {
           deleteTask(task.id);
-      });
+        }
+      );
 
-      editBtn.addEventListener("click", () => {
-        const editInput = item.querySelector(".todo-edit-input");
-        const p = item.querySelector(".todo-text");
+      // ── Edit ──
 
-        editInput.value = p.textContent;
+      function startEditing() {
+        editInput.value = text.textContent;
 
-        p.classList.add("hide");
+        text.classList.add("hide");
         editInput.classList.remove("hide");
 
         editInput.focus();
+        editInput.select();
+      }
 
-        editInput.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            const editText = editInput.value.trim();
-    
-            if (!editText) return;
-    
-            editTask(task.id, editText);
+      function finishEditing() {
+        const newText =
+          editInput.value.trim();
+
+        if (!newText) {
+          editInput.value = text.textContent;
+          return;
+        }
+
+        editTask(
+          task.id,
+          newText
+        );
+      }
+
+      editBtn.addEventListener(
+        "click",
+        startEditing
+      );
+
+      editBtn.addEventListener(
+        "keydown",
+        event => {
+          if (
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
+            startEditing();
           }
-        });
-      });
+        }
+      );
+
+      editInput.addEventListener(
+        "keydown",
+        event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            finishEditing();
+          }
+
+          if (event.key === "Escape") {
+            editInput.value =
+              text.textContent;
+
+            text.classList.remove("hide");
+            editInput.classList.add("hide");
+          }
+        }
+      );
+
+      editInput.addEventListener(
+        "blur",
+        () => {
+          if (
+            !editInput.classList.contains("hide")
+          ) {
+            finishEditing();
+          }
+        }
+      );
 
       todoList.appendChild(item);
     }
+
+    function cycleSort() {
+      const modes = [
+        "newest",
+        "oldest",
+        "completed",
+        "incomplete"
+      ];
+
+      const currentIndex =
+        modes.indexOf(sortMode);
+
+      sortMode =
+        modes[(currentIndex + 1) % modes.length];
+
+      renderList();
+
+      return sortMode;
+    }
+
     function renderList() {
-      const tasks = JSON.parse(Storage.load("tasks") || "[]");
-      const todoList = document.getElementById("todo-list");
+      const todoList =
+        document.querySelector("#todo-list");
+
+      if (!todoList) return;
+
       todoList.innerHTML = "";
-      tasks.forEach(task => {
-        createItem(task);
-      });
+
+      const tasks = sortTasks(getTasks());
+
+      tasks.forEach(createItem);
+
       showEmpty();
       showClearTasks();
       tasksCounter();
     }
 
-    // public API
     function addTask(task) {
-      const tasks = JSON.parse(Storage.load("tasks") || "[]");
+      if (isDuplicate(task.text)) {
+        Toast.show("That task already exists.");
+        return false;
+      }
+
+      const tasks = getTasks();
+
       tasks.push(task);
-      Storage.save("tasks", JSON.stringify(tasks));
+
+      persist(tasks);
+
       createItem(task);
+
       showEmpty();
+      showClearTasks();
       tasksCounter();
+
+      Toast.show("Task added.");
+
+      return true;
     }
+
     function deleteTask(id) {
-      let tasks = JSON.parse(Storage.load("tasks") || "[]");
-      tasks = tasks.filter(task => task.id !== id);
-      Storage.save("tasks", JSON.stringify(tasks));
+      const tasks =
+        getTasks().filter(
+          task => task.id !== id
+        );
+
+      persist(tasks);
+
       renderList();
+
+      Toast.show("Task deleted.");
     }
+
     function editTask(id, text) {
-      let tasks = JSON.parse(Storage.load("tasks") || "[]");
-      const taskToEdit = tasks.find(task => task.id === id);
-      taskToEdit.text = text;
-      Storage.save("tasks", JSON.stringify(tasks));
+      const tasks = getTasks();
+
+      const duplicate = tasks.some(
+        task =>
+          task.id !== id &&
+          task.text.trim().toLowerCase() === text.trim().toLowerCase()
+      );
+
+      if (duplicate) {
+        Toast.show("That task already exists.");
+        return false;
+      }
+
+      const task = tasks.find(
+        task => task.id === id
+      );
+
+      if (!task) return false;
+
+      task.text = text;
+
+      persist(tasks);
       renderList();
+
+      Toast.show("Task updated.");
+
+      return true;
+
     }
+
     function toggleTaskCompletion(id) {
-      const tasks = JSON.parse(Storage.load("tasks") || "[]");
-      const task = tasks.find(task => task.id === id);
-      if (task) {
-        task.completed = !task.completed;
-        Storage.save("tasks", JSON.stringify(tasks));
-        renderList();
-      }
-    }
-    function clearCompletedTasks() {
-      let tasks = JSON.parse(Storage.load("tasks") || "[]");
-      tasks = tasks.filter(task => !task.completed);
-      Storage.save("tasks", JSON.stringify(tasks));
+      const tasks = getTasks();
+
+      const task =
+        tasks.find(
+          task => task.id === id
+        );
+
+      if (!task) return;
+
+      task.completed = !task.completed;
+
+      persist(tasks);
+
       renderList();
     }
 
-    return { generateId, renderList, addTask, editTask, deleteTask, toggleTaskCompletion, clearCompletedTasks };
+    function clearCompletedTasks() {
+      const tasks =
+        getTasks().filter(
+          task => !task.completed
+        );
+
+      persist(tasks);
+
+      renderList();
+
+      Toast.show("Completed tasks cleared.");
+    }
+
+   return {
+      generateId,
+      renderList,
+      addTask,
+      editTask,
+      deleteTask,
+      toggleTaskCompletion,
+      clearCompletedTasks,
+      cycleSort
+    };
   })();
 
-  // ─── Helpers ───────────────────────────────────────────
-  function updateClock () {
-    const clock = document.querySelector("#clock");
-    const now = new Date();
 
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
-    let seconds = now.getSeconds();
+  // ─────────────────────────────────────────────────────────────
+  // Todo UI Helpers
+  // ─────────────────────────────────────────────────────────────
 
-    hours = String(hours).padStart(2, "0");
-    minutes = String(minutes).padStart(2, "0");
-    seconds = String(seconds).padStart(2, "0");
+  function showClearTasks() {
+    const tasks =
+      Storage.loadJSON("tasks", []);
 
-    clock.textContent = `${hours}:${minutes}:${seconds}`
+    const clearBtn =
+      document.querySelector(
+        "#clear-completed-btn"
+      );
+
+    if (!clearBtn) return;
+
+    const hasCompletedTasks =
+      tasks.some(
+        task => task.completed
+      );
+
+    clearBtn.classList.toggle(
+      "hide",
+      !hasCompletedTasks
+    );
   }
 
-  function displayDate () {
-    const dateText = document.querySelector("#date-display");
-    const now = new Date();
+  function tasksCounter() {
+    const tasks =
+      Storage.loadJSON("tasks", []);
 
-    let date = now.toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    })
-    dateText.textContent = date
+    const counter =
+      document.querySelector("#task-counter");
+
+    if (!counter) return;
+
+    const completed =
+      tasks.filter(
+        task => task.completed
+      ).length;
+
+    counter.textContent =
+      `${completed} / ${tasks.length}`;
   }
 
-  function initTheme () {
-    let theme = Storage.load("theme") || "light";
-    document.documentElement.setAttribute('data-theme', theme);
-  }
 
-  function greet () {
-    const greetText = document.querySelector("#greeting");
-    const name = Storage.load("name")
-    const now = new Date();
+  // ─────────────────────────────────────────────────────────────
+  // Event Wiring
+  // ─────────────────────────────────────────────────────────────
 
-    let hour = now.getHours();
-    let time = hour >= 5 && hour < 12 ? "morning" : 
-               hour >= 12 && hour < 16 ? "afternoon" :
-               "evening"
-    greetText.textContent = `Good ${time}, kohi`
-  }
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-  const Menu = (() => {
-    const menu = document.querySelector(".menu-dropdown");
+      // Initial state
+      initTheme();
+      greet();
+      displayDate();
+      updateClock();
 
-    function toggle() { menu.classList.toggle("hide"); }
-    function hide() { menu.classList.add("hide"); }
-    function show() { menu.classList.remove("hide"); }
+      ToDoListModule.renderList();
+      LinksModule.init();
+      TimerModule.init();
 
-    return { toggle, hide, show };
-  })();
+      // Clock
+      setInterval(() => {
+        updateClock();
+        greet();
+      }, 1000);
 
-  function showClearTasks () {
-    const tasks = JSON.parse(Storage.load("tasks") || "[]");
-    const clearBtn = document.querySelector("#clear-completed-btn");
-    const hasCompletedTasks = tasks.some(task => task.completed);
-    
-    if (hasCompletedTasks) {
-      clearBtn.classList.remove("hide");
-    } else {
-      clearBtn.classList.add("hide");
+      // ─────────────────────────────────────────
+      // Theme
+      // ─────────────────────────────────────────
+
+      document
+        .querySelector("#theme-toggle-btn")
+        .addEventListener(
+          "click",
+          toggleTheme
+        );
+
+
+      // ─────────────────────────────────────────
+      // Name
+      // ─────────────────────────────────────────
+
+      document
+        .querySelector("#name-form")
+        .addEventListener(
+          "click",
+          () => {
+            Menu.hide();
+            openNameModal();
+          }
+        );
+
+
+      // ─────────────────────────────────────────
+      // Menu
+      // ─────────────────────────────────────────
+
+      document
+        .querySelector(".menu-btn")
+        .addEventListener(
+          "click",
+          event => {
+            event.stopPropagation();
+            Menu.toggle();
+          }
+        );
+
+
+      // ─────────────────────────────────────────
+      // Todo
+      // ─────────────────────────────────────────
+
+      document
+        .querySelector(".todo-input-row")
+        .addEventListener(
+          "submit",
+          event => {
+            event.preventDefault();
+
+            const input =
+              document.querySelector("#todo-input");
+
+            const text =
+              input.value.trim();
+
+            if (!text) {
+              Toast.show("Enter a task first.");
+              input.focus();
+              return;
+            }
+
+            const task = {
+              id:
+                ToDoListModule.generateId(),
+              text,
+              completed: false
+            };
+
+            ToDoListModule.addTask(task);
+
+            input.value = "";
+            input.focus();
+          }
+        );
+
+
+      document
+        .querySelector("#clear-completed-btn")
+        .addEventListener(
+          "click",
+          () => {
+            ToDoListModule.clearCompletedTasks();
+          }
+        );
+
+      document
+        .querySelector("#sort-tasks-btn")
+        .addEventListener("click", () => {
+          const mode =
+            ToDoListModule.cycleSort();
+
+          const labels = {
+            newest: "Newest first",
+            oldest: "Oldest first",
+            completed: "Completed first",
+            incomplete: "Incomplete first"
+          };
+
+          Toast.show(labels[mode]);
+        });
+
+
+      // ─────────────────────────────────────────
+      // Quick Links
+      // ─────────────────────────────────────────
+
+      document
+        .querySelector(".links-input-area")
+        .addEventListener(
+          "submit",
+          event => {
+            event.preventDefault();
+
+            const labelInput =
+              document.querySelector(
+                "#link-name-input"
+              );
+
+            const urlInput =
+              document.querySelector(
+                "#link-url-input"
+              );
+
+            const label =
+              labelInput.value.trim();
+
+            const url =
+              urlInput.value.trim();
+
+            if (!label || !url) {
+              Toast.show(
+                "Please fill in both fields."
+              );
+              return;
+            }
+
+            const success =
+              LinksModule.addLink(
+                label,
+                url
+              );
+
+            if (!success) return;
+
+            labelInput.value = "";
+            urlInput.value = "";
+
+            labelInput.focus();
+          }
+        );
+
+
+      // ─────────────────────────────────────────
+      // Timer
+      // ─────────────────────────────────────────
+
+      document
+        .querySelector("#timer-start-btn")
+        .addEventListener(
+          "click",
+          () => {
+            TimerModule.start();
+          }
+        );
+
+
+      document
+        .querySelector("#timer-stop-btn")
+        .addEventListener(
+          "click",
+          () => {
+            TimerModule.stop();
+            Toast.show("Timer stopped.");
+          }
+        );
+
+
+      document
+        .querySelector("#timer-reset-btn")
+        .addEventListener(
+          "click",
+          () => {
+            TimerModule.reset();
+          }
+        );
+
+
+      // Preset buttons
+      document
+        .querySelectorAll(
+          ".preset-btn[data-minutes]"
+        )
+        .forEach(button => {
+          button.addEventListener(
+            "click",
+            () => {
+              const minutes =
+                Number(
+                  button.dataset.minutes
+                );
+
+              if (minutes > 0) {
+                TimerModule.selectPreset(
+                  minutes
+                );
+              }
+            }
+          );
+        });
+
+
+      // Custom timer
+      const customPresetBtn =
+        document.querySelector(
+          "#custom-preset-btn"
+        );
+
+      const customInput =
+        document.querySelector(
+          "#timer-input"
+        );
+
+      customPresetBtn.addEventListener(
+        "click",
+        () => {
+          customInput.classList.remove(
+            "hide"
+          );
+
+          customInput.focus();
+        }
+      );
+
+
+      customInput.addEventListener(
+        "keydown",
+        event => {
+          if (event.key === "Escape") {
+            customInput.value = "";
+            customInput.classList.add(
+              "hide"
+            );
+          }
+
+          if (event.key !== "Enter") {
+            return;
+          }
+
+          event.preventDefault();
+
+          const minutes =
+            Number(
+              customInput.value.trim()
+            );
+
+          if (
+            !Number.isInteger(minutes) ||
+            minutes <= 0 ||
+            minutes > 999
+          ) {
+            Toast.show(
+              "Enter a duration between 1 and 999 minutes."
+            );
+            return;
+          }
+
+          TimerModule.selectPreset(
+            minutes
+          );
+
+          customInput.value = "";
+          customInput.classList.add(
+            "hide"
+          );
+        }
+      );
+
+
+      // ─────────────────────────────────────────
+      // Modal close
+      // ─────────────────────────────────────────
+
+      const modal =
+        document.querySelector("#modal");
+
+      const modalCloseBtn =
+        document.querySelector(
+          "#modal-close-btn"
+        );
+
+      modalCloseBtn.addEventListener(
+        "click",
+        () => {
+          Modal.hide();
+        }
+      );
+
+      modal.addEventListener(
+        "click",
+        event => {
+          if (event.target === modal) {
+            Modal.hide();
+          }
+        }
+      );
+
+
+      // ─────────────────────────────────────────
+      // Close menu when clicking outside
+      // ─────────────────────────────────────────
+
+      document.addEventListener(
+        "click",
+        event => {
+          const menu =
+            document.querySelector(
+              ".menu-dropdown"
+            );
+
+          const menuBtn =
+            document.querySelector(
+              ".menu-btn"
+            );
+
+          if (
+            !menu.contains(event.target) &&
+            !menuBtn.contains(event.target)
+          ) {
+            Menu.hide();
+          }
+        }
+      );
+
     }
-  }
-
-  function tasksCounter () {
-    const tasks = JSON.parse(Storage.load("tasks") || "[]");
-    const counter = document.querySelector("#task-counter");
-    const completedTask = tasks.filter(task => task.completed).length
-
-    counter.textContent = `${completedTask} / ${tasks.length}`
-  }
-
-  // ─── Event wiring ──────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function () {
-    initTheme();
-    greet();
-    displayDate();
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    ToDoListModule.renderList();
-    showClearTasks();
-    tasksCounter();
-
-    LinksModule.init();
-    TimerModule.init();
-  });
-
-  // Toggle theme button
-  document.querySelector("#theme-toggle-btn").addEventListener("click", () => {
-    const themeIcon = document.querySelector("#theme-toggle-btn i");
-    const themeText = document.querySelector("#theme-toggle-btn span");
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    Menu.hide();
-    themeIcon.classList.toggle("fa-sun");
-    themeIcon.classList.toggle("fa-moon");
-
-    themeText.textContent = currentTheme === 'dark' ? 'Dark Mode' : 'Light Mode';
-
-    document.documentElement.setAttribute('data-theme', newTheme);      
-    Storage.save("theme", newTheme);
-  })
-
-  // Add name
-  document.querySelector("#name-form").addEventListener("click", (e) => {})
-
-  // Menu button
-  document.querySelector(".menu-btn").addEventListener("click", () => {
-    Menu.toggle();
-  })
-
-  // Todo buttons
-  document.querySelector(".todo-input-row").addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const taskInput = document.querySelector("#todo-input");
-    const taskText = taskInput.value.trim();
-    if (taskText) {
-      const task = {
-        id: ToDoListModule.generateId(),
-        text: taskText,
-        completed: false
-      };
-      ToDoListModule.addTask(task);
-      taskInput.value = "";
-    }
-  })
-
-  document.querySelector("#clear-completed-btn").addEventListener("click", () => {
-    ToDoListModule.clearCompletedTasks();
-  })
-
-  // Quick links
-  document.querySelector(".links-input-area").addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const labelInput = document.querySelector("#link-name-input");
-    const urlInput = document.querySelector("#link-url-input");
-
-    const label = labelInput.value.trim();
-    const url = urlInput.value.trim();
-
-    if (!label || !url) return;
-
-    LinksModule.addLink(label, url);
-
-    labelInput.value = "";
-    urlInput.value = "";
-  });
-
-  // Timer
-  document.querySelector("#timer-start-btn").addEventListener("click", () => {
-    TimerModule.start();
-  });
-
-  document.querySelector("#timer-stop-btn").addEventListener("click", () => {
-    TimerModule.stop();
-  });
-
-  document.querySelector("#timer-reset-btn").addEventListener("click", () => {
-    TimerModule.reset();
-  });
-
-  document.querySelector("#custom-preset-btn").addEventListener("click", () => {
-    const customInput = document.querySelector("#timer-input");
-    customInput.classList.remove("hide");
-    customInput.focus();
-  });
-
-  document.querySelector("#timer-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      const customInput = document.querySelector("#timer-input");
-      const minutes = parseInt(customInput.value.trim(), 10);
-
-      if (!isNaN(minutes) && minutes > 0) {
-        TimerModule.selectPreset(minutes);
-        customInput.value = "";
-        customInput.classList.add("hide");
-      }
-    }
-  });
-
-  document.addEventListener("click" , (e) => {
-    if (!document.querySelector(".menu-dropdown").contains(e.target) && !document.querySelector(".menu-btn").contains(e.target)) {
-      Menu.hide();
-    }
-  })
+  );
 
 })();
